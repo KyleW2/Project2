@@ -325,7 +325,6 @@ void request(char processName[], int requiredMem, Memory *memory)
 {
     if(memory->spaceAvailable < requiredMem)
     {
-        printf("%d\n", memory->spaceAvailable);
         printf("FAIL REQUEST %s %d\n", processName, requiredMem);
         return;
     }

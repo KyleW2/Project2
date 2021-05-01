@@ -16,7 +16,7 @@
 #define NEXTFIT 2
 #define WORSTFIT 3
 
-#define MAX_PROCESSES 20
+#define MAX_PROCESSES 50
 
 typedef struct
 {

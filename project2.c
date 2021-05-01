@@ -42,6 +42,7 @@ typedef struct
     int nextFitIndex;
 } Memory;
 
+/* returns the corresponding int for the given algorithm string */
 int strToAlgo(char *algoName)
 {
     if(strcmp(algoName, "BESTFIT") == 0)
@@ -158,6 +159,7 @@ void parseCommands(char *fileName, Command *commandArray)
     fclose(filePointer);
 }
 
+/* returns a new hole with given parameters */
 Process newHole(int mem, int pos)
 {
     Process hole;
@@ -168,22 +170,7 @@ Process newHole(int mem, int pos)
     return hole;
 }
 
-/* if the next process after a hole is another hole, turn first hole
-   into combinations and second hole in DEAD process */
-void combineHoles(Memory *memory)
-{
-    for(int i = 0; i < memory->nextIndex; i++)
-    {
-        if(strcmp(memory->processes[i].processName, "HOLE") == 0 && strcmp(memory->processes[i+1].processName, "HOLE") == 0)
-        {
-            memory->processes[i].memoryUsed = memory->processes[i].memoryUsed + memory->processes[i+1].memoryUsed;
-
-            memcpy(memory->processes[i+1].processName, "DEAD", sizeof(memory->processes[i+1].processName));
-            memory->processes[i+1].position = -1;
-        }
-    }
-}
-
+/* bubble sort helper function */
 void swap(Process *a, Process *b)
 {
     Process temp = *a;
@@ -205,7 +192,7 @@ void sort(Memory *memory) {
 	}
 }
 
-
+/* creates new process from hole and appends new hole to memory */
 void holeToProcess(char newName[], int requiredMem, Memory *memory, int i)
 {
     int memDifference = memory->processes[i].memoryUsed - requiredMem;
@@ -223,6 +210,7 @@ void holeToProcess(char newName[], int requiredMem, Memory *memory, int i)
     memory->spaceAvailable = memory->spaceAvailable - requiredMem;
 }
 
+/* finds smallest hole that will fit process */
 void bestfit(char processName[], int requiredMem, Memory *memory)
 {
     int smallestSize = memory->totalSpace+1; // largest possible size
@@ -251,6 +239,7 @@ void bestfit(char processName[], int requiredMem, Memory *memory)
     return;
 }
 
+/* finds first hole that will fit process */
 void firstfit(char processName[], int requiredMem, Memory *memory)
 {
     for(int i = 0; i < memory->nextIndex; i++)
@@ -270,6 +259,7 @@ void firstfit(char processName[], int requiredMem, Memory *memory)
     return;
 }
 
+/* finds first hole that will fit process, starting from given index */
 void nextfit(char processName[], int requiredMem, Memory *memory)
 {
     for(int i = memory->nextFitIndex; i < memory->nextIndex; i++)
@@ -293,6 +283,7 @@ void nextfit(char processName[], int requiredMem, Memory *memory)
     return;
 }
 
+/* finds largest hole that will fit process */
 void worstfit(char processName[], int requiredMem, Memory *memory)
 {
     int largestSize = -1;
@@ -321,6 +312,7 @@ void worstfit(char processName[], int requiredMem, Memory *memory)
     return;
 }
 
+/* calls the correct request function based on the given algorithm */
 void request(char processName[], int requiredMem, Memory *memory)
 {
     if(memory->spaceAvailable < requiredMem)
@@ -346,6 +338,7 @@ void request(char processName[], int requiredMem, Memory *memory)
     }
 }
 
+/* turns process into a hole */
 void release(char processName[], Memory *memory)
 {
     for(int i = 0; i < memory->nextIndex; i++)
@@ -362,6 +355,7 @@ void release(char processName[], Memory *memory)
     return;
 }
 
+/* lists all holes size and adress */
 void listAvailable(Memory *memory)
 {
     int available = 0;
@@ -369,8 +363,11 @@ void listAvailable(Memory *memory)
     {
         if(strcmp(memory->processes[i].processName, "HOLE") == 0)
         {
-            printf("(%d, %d) ", memory->processes[i].memoryUsed, memory->processes[i].position);
-            available++;
+            if(memory->processes[i].memoryUsed != memory->processes[i].position)
+            {
+                printf("(%d, %d) ", memory->processes[i].memoryUsed, memory->processes[i].position);
+                available++;
+            }
         }
     }
 
@@ -386,12 +383,13 @@ void listAvailable(Memory *memory)
     }
 }
 
+/* list all processes currently in memory */
 void listAssigned(Memory *memory)
 {
     int assigned = 0;
     for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(!(strcmp(memory->processes[i].processName, "HOLE") == 0) && !(strcmp(memory->processes[i].processName, "DEAD") == 0))
+        if(!(strcmp(memory->processes[i].processName, "HOLE") == 0))
         {
             printf("(%s, %d, %d) ", memory->processes[i].processName, memory->processes[i].memoryUsed, memory->processes[i].position);
             assigned++;
@@ -410,6 +408,7 @@ void listAssigned(Memory *memory)
     }
 }
 
+/* prints specific process, pretty sure this is never called */
 void find(char processName[], Memory *memory)
 {
     for(int i = 0; i < memory->nextIndex; i++)
@@ -424,6 +423,7 @@ void find(char processName[], Memory *memory)
     return;
 }
 
+/* calls corresponding function based on the command */
 void run(Command command, Memory *memory)
 {
     switch(command.command)

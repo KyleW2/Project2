@@ -363,11 +363,8 @@ void listAvailable(Memory *memory)
     {
         if(strcmp(memory->processes[i].processName, "HOLE") == 0)
         {
-            if(memory->processes[i].memoryUsed != memory->processes[i].position)
-            {
-                printf("(%d, %d) ", memory->processes[i].memoryUsed, memory->processes[i].position);
-                available++;
-            }
+            printf("(%d, %d) ", memory->processes[i].memoryUsed, memory->processes[i].position);
+            available++;
         }
     }
 

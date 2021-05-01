@@ -291,26 +291,44 @@ void firstfit(char processName[], int requiredMem, Memory *memory)
     return;
 }
 
-/* finds first hole that will fit process, starting from given index */
-void nextfit(char processName[], int requiredMem, Memory *memory)
+/* determines if there is a hole big enough for nextfit, prevents infinite reccursion */
+int isPossible(int requiredMem, Memory *memory)
 {
-    for(int i = memory->nextFitIndex; i < memory->nextIndex; i++)
+    int possibleHoles = 0;
+
+    for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0 && memory->processes[i].memoryUsed >= requiredMem)
         {
-            if(memory->processes[i].memoryUsed >= requiredMem)
-            {
-                holeToProcess(processName, requiredMem, memory, i);
-                memory->nextFitIndex = i;
-                printf("ALLOCATED %s %d\n", processName, memory->processes[i].position);
-                return;
-            }
+            possibleHoles++;
         }
     }
 
-    memory->nextFitIndex = 0;
-    nextfit(processName, requiredMem, memory);
+    return possibleHoles;
+}
 
+/* finds first hole that will fit process, starting from given index */
+void nextfit(char processName[], int requiredMem, Memory *memory)
+{
+    if(isPossible(requiredMem, memory) > 0)
+    {
+        for(int i = memory->nextFitIndex; i < memory->nextIndex; i++)
+        {
+            if(strcmp(memory->processes[i].processName, "HOLE") == 0)
+            {
+                if(memory->processes[i].memoryUsed >= requiredMem)
+                {
+                    holeToProcess(processName, requiredMem, memory, i);
+                    memory->nextFitIndex = i+1;
+                    printf("ALLOCATED %s %d\n", processName, memory->processes[i].position);
+                    return;
+                }
+            }
+        }
+
+        memory->nextFitIndex = 0;
+        nextfit(processName, requiredMem, memory);
+    }
     printf("FAIL REQUEST %s %d\n", processName, requiredMem);
     return;
 }

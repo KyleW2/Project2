@@ -1,0 +1,15 @@
+Kyle Weidner
+
+To compile and use:
+	run make clean
+	run make all
+	run ./project2 <algorithm> <total memory> <text file with commands>
+
+Expected bugs:
+	naming a process "HOLE" will break the entire project
+	./project2 must be run with all 3 arguments
+
+Websites used:
+	Used geeksforgeeks explination of Next Fit
+	https://www.geeksforgeeks.org/program-for-next-fit-algorithm-in-memory-management/
+	

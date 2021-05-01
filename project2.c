@@ -16,7 +16,7 @@
 #define NEXTFIT 2
 #define WORSTFIT 3
 
-#define MAX_PROCESSES 10
+#define MAX_PROCESSES 20
 
 typedef struct
 {
@@ -39,6 +39,7 @@ typedef struct
     int algo;
     int totalSpace;
     int spaceAvailable;
+    int nextFitIndex;
 } Memory;
 
 int strToAlgo(char *algoName)
@@ -169,50 +170,71 @@ Process newHole(int mem, int pos)
 
 /* if the next process after a hole is another hole, turn first hole
    into combinations and second hole in DEAD process */
-void combineHoles(Memory memory)
+void combineHoles(Memory *memory)
 {
-    for(int i = 0; i < memory.nextIndex; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(strcmp(memory.processes[i].processName, "HOLE") == 0 && strcmp(memory.processes[i+1].processName, "HOLE") == 0)
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0 && strcmp(memory->processes[i+1].processName, "HOLE") == 0)
         {
-            memory.processes[i].memoryUsed = memory.processes[i].memoryUsed + memory.processes[i+1].memoryUsed;
+            memory->processes[i].memoryUsed = memory->processes[i].memoryUsed + memory->processes[i+1].memoryUsed;
 
-            memcpy(memory.processes[i+1].processName, "DEAD", sizeof(memory.processes[i+1].processName));
-            memory.processes[i+1].position = -1;
+            memcpy(memory->processes[i+1].processName, "DEAD", sizeof(memory->processes[i+1].processName));
+            memory->processes[i+1].position = -1;
         }
     }
 }
 
-void holeToProcess(char newName[], int requiredMem, Memory memory, int i)
+void swap(Process *a, Process *b)
 {
-    int memDifference = memory.processes[i].memoryUsed - requiredMem;
+    Process temp = *a;
+    *a = *b;
+    *b = temp;
+}
 
-    memcpy(memory.processes[i].processName, newName, sizeof(memory.processes[i].processName));
-    memory.processes[i].memoryUsed = requiredMem;
+/* standard bubble sort */
+void sort(Memory *memory) {
+	for(int i = 0; i < memory->nextIndex -1; i++)
+    {
+		for(int j = 0; j < memory->nextIndex - i -1; j++)
+        {
+			if(memory->processes[j].position > memory->processes[j+1].position)
+            {
+				swap(&memory->processes[j], &memory->processes[j+1]);
+			}
+		}
+	}
+}
+
+
+void holeToProcess(char newName[], int requiredMem, Memory *memory, int i)
+{
+    int memDifference = memory->processes[i].memoryUsed - requiredMem;
+
+    memcpy(memory->processes[i].processName, newName, sizeof(memory->processes[i].processName));
+    memory->processes[i].memoryUsed = requiredMem;
 
     if(memDifference == 0)
     {
         return;
     }
     // if hole had left over space, make new hole with memDifference at position (old position + memory taken up)
-    memory.processes[memory.nextIndex] = newHole(memDifference, memory.processes[i].position + requiredMem);
-    memory.spaceAvailable = memory.spaceAvailable - requiredMem;
-    
-    combineHoles(memory);
+    memory->processes[memory->nextIndex] = newHole(memDifference, memory->processes[i].position + requiredMem);
+    memory->nextIndex++;
+    memory->spaceAvailable = memory->spaceAvailable - requiredMem;
 }
 
-void bestfit(char processName[], int requiredMem, Memory memory)
+void bestfit(char processName[], int requiredMem, Memory *memory)
 {
-    int smallestSize = memory.totalSpace; // largest possible size
+    int smallestSize = memory->totalSpace+1; // largest possible size
     int smallestIndex = -1;
 
-    for(int i = 0; i < memory.nextIndex; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(strcmp(memory.processes[i].processName, "HOLE") == 0)
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
         {
-            if(memory.processes[i].memoryUsed >= requiredMem && memory.processes[i].memoryUsed < smallestSize)
+            if((memory->processes[i].memoryUsed >= requiredMem) && (memory->processes[i].memoryUsed < smallestSize))
             {
-                smallestSize = memory.processes[i].memoryUsed;
+                smallestSize = memory->processes[i].memoryUsed;
                 smallestIndex = i;
             }
         }
@@ -221,37 +243,94 @@ void bestfit(char processName[], int requiredMem, Memory memory)
     if(smallestIndex > -1)
     {
         holeToProcess(processName, requiredMem, memory, smallestIndex);
-        printf("ALLOCATED %s %d\n", processName, requiredMem);
-        return;
-    }
-    else
-    {
-        printf("FAIL REQUEST %s %n\n", processName, requiredMem);
-        return;
-    }
-}
-void firstfit(char processName[], int requiredMem, Memory memory)
-{
-    printf("FAIL REQUEST %s %n\n", processName, requiredMem);
-}
-void nextfit(char processName[], int requiredMem, Memory memory)
-{
-    printf("FAIL REQUEST %s %n\n", processName, requiredMem);
-}
-void worstfit(char processName[], int requiredMem, Memory memory)
-{
-    printf("FAIL REQUEST %s %n\n", processName, requiredMem);
-}
-
-void request(char processName[], int requiredMem, Memory memory)
-{
-    if(memory.spaceAvailable > requiredMem)
-    {
-        printf("FAIL REQUEST %s %n\n", processName, requiredMem);
+        printf("ALLOCATED %s %d\n", processName, memory->processes[smallestIndex].position);
         return;
     }
 
-    switch(memory.algo)
+    printf("FAIL REQUEST %s %d\n", processName, requiredMem);
+    return;
+}
+
+void firstfit(char processName[], int requiredMem, Memory *memory)
+{
+    for(int i = 0; i < memory->nextIndex; i++)
+    {
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
+        {
+            if(memory->processes[i].memoryUsed >= requiredMem)
+            {
+                holeToProcess(processName, requiredMem, memory, i);
+                printf("ALLOCATED %s %d\n", processName, memory->processes[i].position);
+                return;
+            }
+        }
+    }
+
+    printf("FAIL REQUEST %s %d\n", processName, requiredMem);
+    return;
+}
+
+void nextfit(char processName[], int requiredMem, Memory *memory)
+{
+    for(int i = memory->nextFitIndex; i < memory->nextIndex; i++)
+    {
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
+        {
+            if(memory->processes[i].memoryUsed >= requiredMem)
+            {
+                holeToProcess(processName, requiredMem, memory, i);
+                memory->nextFitIndex = i;
+                printf("ALLOCATED %s %d\n", processName, memory->processes[i].position);
+                return;
+            }
+        }
+    }
+
+    memory->nextFitIndex = 0;
+    nextfit(processName, requiredMem, memory);
+
+    printf("FAIL REQUEST %s %d\n", processName, requiredMem);
+    return;
+}
+
+void worstfit(char processName[], int requiredMem, Memory *memory)
+{
+    int largestSize = -1;
+    int largestIndex = -1;
+
+    for(int i = 0; i < memory->nextIndex; i++)
+    {
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
+        {
+            if((memory->processes[i].memoryUsed >= requiredMem) && (memory->processes[i].memoryUsed > largestSize))
+            {
+                largestSize = memory->processes[i].memoryUsed;
+                largestIndex = i;
+            }
+        }
+    }
+
+    if(largestIndex > -1)
+    {
+        holeToProcess(processName, requiredMem, memory, largestIndex);
+        printf("ALLOCATED %s %d\n", processName, memory->processes[largestIndex].position);
+        return;
+    }
+
+    printf("FAIL REQUEST %s %d\n", processName, requiredMem);
+    return;
+}
+
+void request(char processName[], int requiredMem, Memory *memory)
+{
+    if(memory->spaceAvailable < requiredMem)
+    {
+        printf("%d\n", memory->spaceAvailable);
+        printf("FAIL REQUEST %s %d\n", processName, requiredMem);
+        return;
+    }
+
+    switch(memory->algo)
     {
         case BESTFIT:
             bestfit(processName, requiredMem, memory);
@@ -268,15 +347,15 @@ void request(char processName[], int requiredMem, Memory memory)
     }
 }
 
-void release(char processName[], Memory memory)
+void release(char processName[], Memory *memory)
 {
-    for(int i = 0; i < MAX_PROCESSES; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(strcmp(memory.processes[i].processName, processName) == 0)
+        if(strcmp(memory->processes[i].processName, processName) == 0)
         {
-            memcpy(memory.processes[i].processName, "HOLE", sizeof(memory.processes[i].processName));
-            memory.spaceAvailable = memory.spaceAvailable + memory.processes[i].memoryUsed;
-            printf("FREE %s %d %d\n", processName, memory.processes[i].memoryUsed, memory.processes[i].position);
+            memcpy(memory->processes[i].processName, "HOLE", sizeof(memory->processes[i].processName));
+            memory->spaceAvailable = memory->spaceAvailable + memory->processes[i].memoryUsed;
+            printf("FREE %s %d %d\n", processName, memory->processes[i].memoryUsed, memory->processes[i].position);
             return;
         }
     }
@@ -284,14 +363,14 @@ void release(char processName[], Memory memory)
     return;
 }
 
-void listAvailable(Memory memory)
+void listAvailable(Memory *memory)
 {
     int available = 0;
     for(int i = 0; i < MAX_PROCESSES; i++)
     {
-        if(strcmp(memory.processes[i].processName, "HOLE") == 0)
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0)
         {
-            printf("(%d, %d) ", memory.processes[i].memoryUsed, memory.processes[i].position);
+            printf("(%d, %d) ", memory->processes[i].memoryUsed, memory->processes[i].position);
             available++;
         }
     }
@@ -308,14 +387,14 @@ void listAvailable(Memory memory)
     }
 }
 
-void listAssigned(Memory memory)
+void listAssigned(Memory *memory)
 {
     int assigned = 0;
-    for(int i = 0; i < MAX_PROCESSES; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
-        if(!(strcmp(memory.processes[i].processName, "HOLE") == 0) && !(strcmp(memory.processes[i].processName, "DEAD") == 0))
+        if(!(strcmp(memory->processes[i].processName, "HOLE") == 0) && !(strcmp(memory->processes[i].processName, "DEAD") == 0))
         {
-            printf("(%s, %d, %d) ", memory.processes[i].processName, memory.processes[i].memoryUsed, memory.processes[i].position);
+            printf("(%s, %d, %d) ", memory->processes[i].processName, memory->processes[i].memoryUsed, memory->processes[i].position);
             assigned++;
         }
     }
@@ -332,13 +411,13 @@ void listAssigned(Memory memory)
     }
 }
 
-void find(char processName[], Memory memory)
+void find(char processName[], Memory *memory)
 {
     for(int i = 0; i < MAX_PROCESSES; i++)
     {
-        if(strcmp(memory.processes[i].processName, processName) == 0)
+        if(strcmp(memory->processes[i].processName, processName) == 0)
         {
-            printf("(%s, %d, %d)\n", processName, memory.processes[i].memoryUsed, memory.processes[i].position);
+            printf("(%s, %d, %d)\n", processName, memory->processes[i].memoryUsed, memory->processes[i].position);
             return;
         }
     }
@@ -346,7 +425,7 @@ void find(char processName[], Memory memory)
     return;
 }
 
-void run(Command command, Memory memory)
+void run(Command command, Memory *memory)
 {
     switch(command.command)
     {
@@ -369,14 +448,16 @@ void run(Command command, Memory memory)
             printf("BAD COMMAND\n");
             break;
     }
+    sort(memory);
 }
 
 /* creates a hole process at the start of memory */
-void initMemory(Memory memory)
+void initMemory(Memory *memory)
 {
-    memory.processes[0] = newHole(memory.totalSpace, 0);
-    memory.nextIndex = 1;
-    memory.spaceAvailable = memory.totalSpace;
+    memory->processes[0] = newHole(memory->totalSpace, 0);
+    memory->nextIndex = 1;
+    memory->spaceAvailable = memory->totalSpace;
+    memory->nextFitIndex = 0;
 }
 
 int main(int argc, char **argv)
@@ -388,8 +469,8 @@ int main(int argc, char **argv)
 
     Memory memory;
     memory.algo = strToAlgo(argv[1]);
-    memory.totalSpace = (int)pow(2, strtol(argv[2], (char **)NULL, 10));
-    initMemory(memory);
+    memory.totalSpace = (int)strtol(argv[2], (char **)NULL, 10);
+    initMemory(&memory);
 
     char *fileName = argv[3];
 
@@ -400,7 +481,7 @@ int main(int argc, char **argv)
 
     for(int i = 0; i < numOfCommands; i++)
     {
-        run(commandArray[i], memory);
+        run(commandArray[i], &memory);
     }
 
     return 0;

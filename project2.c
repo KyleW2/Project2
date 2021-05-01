@@ -170,6 +170,38 @@ Process newHole(int mem, int pos)
     return hole;
 }
 
+void removeIndex(Memory *memory, int avoid)
+{
+    Process newProcesses[MAX_PROCESSES];
+    int count = 0;
+
+    for(int i = 0; i < memory->nextIndex; i++)
+    {
+        if(i != avoid)
+        {
+            newProcesses[count] = memory->processes[i];
+            count++;
+        }
+    }
+
+    memcpy(memory->processes, &newProcesses, sizeof(memory->processes));
+    memory->nextIndex = count;
+
+    combineHoles(memory);
+}
+
+void combineHoles(Memory *memory)
+{
+    for(int i = 0; i < memory->nextIndex; i++)
+    {
+        if(strcmp(memory->processes[i].processName, "HOLE") == 0 && strcmp(memory->processes[i+1].processName, "HOLE") == 0)
+        {
+            memory->processes[i].memoryUsed = memory->processes[i].memoryUsed + memory->processes[i+1].memoryUsed;
+            removeIndex(memory, i+1);
+        }
+    }
+}
+
 /* bubble sort helper function */
 void swap(Process *a, Process *b)
 {
@@ -445,6 +477,7 @@ void run(Command command, Memory *memory)
             break;
     }
     sort(memory);
+    combineHoles(memory);
 }
 
 /* creates a hole process at the start of memory */

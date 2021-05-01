@@ -365,7 +365,7 @@ void release(char processName[], Memory *memory)
 void listAvailable(Memory *memory)
 {
     int available = 0;
-    for(int i = 0; i < MAX_PROCESSES; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
         if(strcmp(memory->processes[i].processName, "HOLE") == 0)
         {
@@ -412,7 +412,7 @@ void listAssigned(Memory *memory)
 
 void find(char processName[], Memory *memory)
 {
-    for(int i = 0; i < MAX_PROCESSES; i++)
+    for(int i = 0; i < memory->nextIndex; i++)
     {
         if(strcmp(memory->processes[i].processName, processName) == 0)
         {

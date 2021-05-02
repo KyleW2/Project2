@@ -39,7 +39,7 @@ typedef struct
     int algo;
     int totalSpace;
     int spaceAvailable;
-    int nextFitIndex;
+    int nextFitAdress;
 } Memory;
 
 /* returns the corresponding int for the given algorithm string */
@@ -307,26 +307,39 @@ int isPossible(int requiredMem, Memory *memory)
     return possibleHoles;
 }
 
+/* helper function that returns index of process with given adress */
+void getIndexFromAdress(int adress, Memory *memory)
+{
+    for(int i = 0; i < memory->nextIndex; i++)
+    {
+        if(memory->processes[i].position == adress)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 /* finds first hole that will fit process, starting from given index */
 void nextfit(char processName[], int requiredMem, Memory *memory)
 {
     if(isPossible(requiredMem, memory) > 0)
     {
-        for(int i = memory->nextFitIndex; i < memory->nextIndex; i++)
+        for(int i = getIndexFromAdress(memory->nextFitAdress); i < memory->nextIndex; i++)
         {
             if(strcmp(memory->processes[i].processName, "HOLE") == 0)
             {
                 if(memory->processes[i].memoryUsed >= requiredMem)
                 {
                     holeToProcess(processName, requiredMem, memory, i);
-                    memory->nextFitIndex = i+1;
+                    memory->nextFitAdress = memory->processes[i].position + requiredMem;
                     printf("ALLOCATED %s %d\n", processName, memory->processes[i].position);
                     return;
                 }
             }
         }
 
-        memory->nextFitIndex = 0;
+        memory->nextFitAdress = 0;
         nextfit(processName, requiredMem, memory);
     }
     printf("FAIL REQUEST %s %d\n", processName, requiredMem);
@@ -504,7 +517,7 @@ void initMemory(Memory *memory)
     memory->processes[0] = newHole(memory->totalSpace, 0);
     memory->nextIndex = 1;
     memory->spaceAvailable = memory->totalSpace;
-    memory->nextFitIndex = 0;
+    memory->nextFitAdress = 0;
 }
 
 int main(int argc, char **argv)

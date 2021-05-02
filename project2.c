@@ -308,7 +308,7 @@ int isPossible(int requiredMem, Memory *memory)
 }
 
 /* helper function that returns index of process with given adress */
-void getIndexFromAdress(int adress, Memory *memory)
+int getIndexFromAdress(int adress, Memory *memory)
 {
     for(int i = 0; i < memory->nextIndex; i++)
     {
@@ -325,7 +325,7 @@ void nextfit(char processName[], int requiredMem, Memory *memory)
 {
     if(isPossible(requiredMem, memory) > 0)
     {
-        for(int i = getIndexFromAdress(memory->nextFitAdress); i < memory->nextIndex; i++)
+        for(int i = getIndexFromAdress(memory->nextFitAdress, memory); i < memory->nextIndex; i++)
         {
             if(strcmp(memory->processes[i].processName, "HOLE") == 0)
             {
